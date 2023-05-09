@@ -19,6 +19,7 @@ var outputPath = flag.String("path", "./", "output file path")
 var pluginPath = flag.String("pluginPath", "/usr/local/lib/grpc_php_plugin", "plugin path")
 var protoPath = flag.String("protoPath", "", "proto path")
 var protoFile = flag.String("proto", "", "proto file")
+var clientExtendClass = flag.String("clientExtendClass", "", "\\Crayoon\\HyperfGrpcClient\\BaseGrpcClient")
 
 func main() {
 	flag.Parse()
@@ -33,15 +34,24 @@ func main() {
 	tempPath, _ := os.MkdirTemp(path, "grpc_temp_")
 	defer os.RemoveAll(tempPath)
 
-	cmd := exec.Command(protocPath,
-		"--php_out="+tempPath,
-		"--grpc_out="+tempPath,
-		"--plugin=protoc-gen-grpc="+*pluginPath,
-		"--proto_path="+*protoPath, //todo 这里需要指定多路径
-		*protoFile,
-	)
+	protoPaths := []string{
+		"--php_out=" + tempPath,
+		"--grpc_out=" + tempPath,
+		"--plugin=protoc-gen-grpc=" + *pluginPath,
+	}
+	for _, path := range strings.Split(*protoPath, ",") {
+		protoPaths = append(protoPaths, "--proto_path="+path)
+	}
+
+	for _, path := range strings.Split(*protoFile, ",") {
+		protoPaths = append(protoPaths, path)
+	}
+
+	cmd := exec.Command(protocPath, protoPaths...)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Println(cmd.String())
 		fmt.Println("Protoc Error:", err)
 		return
 	}
@@ -53,7 +63,7 @@ func main() {
 			"/**\n     * @param string $hostname hostname\n     * @param array $opts channel options\n     * @param \\Grpc\\Channel $channel (optional) re-use channel object\n     */\n    public function __construct($hostname, $opts, $channel = null) {\n        parent::__construct($hostname, $opts, $channel);\n    }\n\n    ",
 			"",
 		},
-		{"extends \\Grpc\\BaseStub", "extends \\Crayoon\\HyperfGrpcClient\\BaseGrpcClient"},
+		{"extends \\Grpc\\BaseStub", "extends " + *clientExtendClass},
 		{"@return \\Grpc\\UnaryCall", "@return array"},
 	}
 	if err := replaceInDir(tempPath, replaces, path); err != nil {
@@ -83,7 +93,7 @@ func replaceInDir(tempDir string, replaces []replacer, targetDir string) error {
 		}
 
 		relPath := strings.TrimPrefix(path, tempDir)
-		targetPath := filepath.Join(targetDir, relPath) //todo 这里需要注意大小写问题
+		targetPath := strings.Replace(filepath.Join(targetDir, relPath), "/App/", "/app/", 1)
 		//创建需要的路径
 		if err := os.MkdirAll(filepath.Dir(targetPath), 0777); err != nil {
 			return err

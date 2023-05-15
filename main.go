@@ -19,7 +19,10 @@ var outputPath = flag.String("path", "./", "output file path")
 var pluginPath = flag.String("pluginPath", "/usr/local/lib/grpc_php_plugin", "plugin path")
 var protoPath = flag.String("protoPath", "", "proto path")
 var protoFile = flag.String("proto", "", "proto file")
-var clientExtendClass = flag.String("clientExtendClass", "", "\\Crayoon\\HyperfGrpcClient\\BaseGrpcClient")
+var clientExtendClass = flag.String("clientExtendClass", "\\Crayoon\\HyperfGrpcClient\\BaseGrpcClient", "php client extend class namespace(option)")
+
+//var phpNamespace = flag.String("phpName", "", "php namespace(option)")
+//var phpMetadataNamespace = flag.String("phpMetadataNamespace", "", "php metadata namespace(option)")
 
 func main() {
 	flag.Parse()

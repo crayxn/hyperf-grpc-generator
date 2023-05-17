@@ -96,10 +96,16 @@ func replaceInDir(tempDir string, replaces []replacer, targetDir string) error {
 		}
 
 		relPath := strings.TrimPrefix(path, tempDir)
-		targetPath := strings.Replace(filepath.Join(targetDir, relPath), "/App/", "/app/", 1)
+		targetPath := strings.Replace(filepath.Join(targetDir, relPath), targetDir+"/App/", targetDir+"/app/", 1)
 		//创建需要的路径
 		if err := os.MkdirAll(filepath.Dir(targetPath), 0777); err != nil {
 			return err
+		}
+		//先删除旧文件
+		if _, err := os.Stat(targetPath); err == nil {
+			if err := os.Remove(targetPath); err != nil {
+				return err
+			}
 		}
 		//移入指定路径
 		if err := os.Rename(path, targetPath); err != nil {
